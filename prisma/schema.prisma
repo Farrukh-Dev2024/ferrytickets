@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String?
+  email         String         @unique
+  password      String?
+  avatar        String?
+  credits       Float          @default(0)
+  provider      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  bookings      Booking[]
+  reviews       Review[]
+  notifications Notification[]
+}
+
+model Country {
+  id           String   @id @default(cuid())
+  name         String
+  code         String   @unique
+  flag         String   @default("")
+  illustration String   @default("")
+  regions      Region[]
+  ports        Port[]
+}
+
+model Region {
+  id        String  @id @default(cuid())
+  name      String
+  countryId String
+  country   Country @relation(fields: [countryId], references: [id])
+  ports     Port[]
+}
+
+model Port {
+  id         String  @id @default(cuid())
+  name       String
+  code       String  @unique
+  regionId   String
+  countryId  String
+  lat        Float
+  lng        Float
+  region     Region  @relation(fields: [regionId], references: [id])
+  country    Country @relation(fields: [countryId], references: [id])
+  fromRoutes Route[] @relation("FromPort")
+  toRoutes   Route[] @relation("ToPort")
+}
+
+model FerryOperator {
+  id      String   @id @default(cuid())
+  name    String
+  logo    String   @default("")
+  code    String   @unique
+  vessels Vessel[]
+  routes  Route[]
+}
+
+model Vessel {
+  id         String        @id @default(cuid())
+  name       String
+  operatorId String
+  capacity   Int
+  amenities  String[]
+  photos     String[]
+  operator   FerryOperator @relation(fields: [operatorId], references: [id])
+  routes     Route[]
+}
+
+model Route {
+  id         String        @id @default(cuid())
+  fromPortId String
+  toPortId   String
+  operatorId String
+  vesselId   String
+  fromPort   Port          @relation("FromPort", fields: [fromPortId], references: [id])
+  toPort     Port          @relation("ToPort", fields: [toPortId], references: [id])
+  operator   FerryOperator @relation(fields: [operatorId], references: [id])
+  vessel     Vessel        @relation(fields: [vesselId], references: [id])
+  schedules  Schedule[]
+}
+
+model Schedule {
+  id            String       @id @default(cuid())
+  routeId       String
+  departureTime String
+  arrivalTime   String
+  duration      Int
+  date          DateTime
+  route         Route        @relation(fields: [routeId], references: [id])
+  pricing       Pricing[]
+  bookingLegs   BookingLeg[]
+}
+
+model Pricing {
+  id         String   @id @default(cuid())
+  scheduleId String
+  basePrice  Float
+  currency   String   @default("EUR")
+  discount   Float?
+  schedule   Schedule @relation(fields: [scheduleId], references: [id])
+}
+
+model Booking {
+  id         String       @id @default(cuid())
+  userId     String
+  code       String       @unique
+  status     String       @default("upcoming")
+  totalPrice Float
+  currency   String       @default("EUR")
+  type       String       @default("basic")
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  user       User         @relation(fields: [userId], references: [id])
+  legs       BookingLeg[]
+}
+
+model BookingLeg {
+  id         String   @id @default(cuid())
+  bookingId  String
+  scheduleId String
+  passengers Int
+  vehicles   Int      @default(0)
+  pets       Int      @default(0)
+  seatInfo   String?
+  status     String   @default("confirmed")
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+  schedule   Schedule @relation(fields: [scheduleId], references: [id])
+  reviews    Review[]
+}
+
+model Review {
+  id           String     @id @default(cuid())
+  userId       String
+  bookingLegId String
+  title        String
+  content      String
+  rating       Int
+  createdAt    DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id])
+  bookingLeg   BookingLeg @relation(fields: [bookingLegId], references: [id])
+}
+
+model Article {
+  id        String   @id @default(cuid())
+  title     String
+  excerpt   String
+  content   String
+  image     String   @default("")
+  slug      String   @unique
+  createdAt DateTime @default(now())
+}
+
+model Currency {
+  id     String @id @default(cuid())
+  code   String @unique
+  symbol String
+  name   String
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}

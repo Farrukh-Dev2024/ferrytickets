@@ -1,0 +1,143 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
+
+const FALLBACK_REVIEWS = [
+  {
+    id: "rev-001",
+    user: { name: "James Mitchell", avatar: null, country: "United Kingdom" },
+    operator: { id: "op-bluestar", name: "Blue Star Ferries" },
+    route: "Piraeus \u2192 Santorini",
+    vessel: "Blue Star Delos",
+    rating: 5,
+    title: "Fantastic experience on the Blue Star Delos",
+    content: "We took the morning ferry from Piraeus to Santorini and it was a wonderful experience. The ship was clean, modern, and well-maintained. The restaurant had great food with reasonable prices. The deck area was perfect for enjoying the views of the islands as we passed by. Highly recommend the business class seats for extra comfort on the longer voyage.",
+    travelDate: "2026-01-18",
+    createdAt: "2026-01-25T14:30:00Z",
+    helpful: 34,
+    verified: true,
+    categories: { comfort: 5, cleanliness: 5, punctuality: 5, value: 4, food: 4 },
+  },
+  {
+    id: "rev-002",
+    user: { name: "Anna Schmidt", avatar: null, country: "Germany" },
+    operator: { id: "op-seajets", name: "SeaJets" },
+    route: "Mykonos \u2192 Santorini",
+    vessel: "Champion Jet 1",
+    rating: 3,
+    title: "Fast but cramped seating",
+    content: "The journey was quick which is a big plus, only about 2.5 hours. However, the seating was quite cramped and uncomfortable for anyone tall. The air conditioning was too cold. The cafe had limited options and everything was overpriced. The crew was helpful though, and we arrived on time. Would choose a conventional ferry next time for comfort.",
+    travelDate: "2026-02-02",
+    createdAt: "2026-02-05T09:15:00Z",
+    helpful: 22,
+    verified: true,
+    categories: { comfort: 2, cleanliness: 3, punctuality: 5, value: 3, food: 2 },
+  },
+  {
+    id: "rev-003",
+    user: { name: "Marie Dubois", avatar: null, country: "France" },
+    operator: { id: "op-minoan", name: "Minoan Lines" },
+    route: "Piraeus \u2192 Heraklion",
+    vessel: "Cruise Europa",
+    rating: 5,
+    title: "Like a mini cruise! Absolutely loved it",
+    content: "Taking the overnight Minoan Lines ferry from Piraeus to Heraklion was the highlight of our trip. The outside cabin was spacious and had a proper bed, not a bunk. The onboard restaurant served excellent Greek cuisine. Waking up to the sunrise as we approached Crete was magical. This is the way to travel if you have the time. The ship felt more like a cruise liner than a ferry.",
+    travelDate: "2025-12-28",
+    createdAt: "2026-01-02T18:45:00Z",
+    helpful: 56,
+    verified: true,
+    categories: { comfort: 5, cleanliness: 5, punctuality: 4, value: 5, food: 5 },
+  },
+  {
+    id: "rev-004",
+    user: { name: "Dimitris Alexopoulos", avatar: null, country: "Greece" },
+    operator: { id: "op-hellenic", name: "Hellenic Seaways" },
+    route: "Rafina \u2192 Mykonos",
+    vessel: "Highspeed 7",
+    rating: 4,
+    title: "Reliable and reasonably priced",
+    content: "I use Hellenic Seaways regularly for trips to the islands and they are consistently good. The Highspeed 7 is a modern vessel with comfortable seating and decent WiFi. We departed and arrived on time. The only downside is that in rough seas the catamaran rocks quite a bit, so keep that in mind if you get seasick. Overall a solid choice.",
+    travelDate: "2026-02-14",
+    createdAt: "2026-02-16T11:20:00Z",
+    helpful: 18,
+    verified: true,
+    categories: { comfort: 4, cleanliness: 4, punctuality: 5, value: 4, food: 3 },
+  },
+  {
+    id: "rev-005",
+    user: { name: "Sarah Johnson", avatar: null, country: "United States" },
+    operator: { id: "op-bluestar", name: "Blue Star Ferries" },
+    route: "Piraeus \u2192 Naxos",
+    vessel: "Blue Star Naxos",
+    rating: 4,
+    title: "Great views and smooth sailing",
+    content: "Our first time on a Greek ferry and it exceeded expectations. The outdoor deck areas are wonderful for watching the islands pass by. We travelled in economy class which was perfectly fine for a 5-hour trip. The onboard shop had some nice souvenirs and the cafe area was well-stocked. Only minor complaint is that boarding was a bit chaotic, but once on the ship everything was great.",
+    travelDate: "2026-01-05",
+    createdAt: "2026-01-10T16:00:00Z",
+    helpful: 29,
+    verified: true,
+    categories: { comfort: 4, cleanliness: 4, punctuality: 4, value: 4, food: 3 },
+  },
+  {
+    id: "rev-006",
+    user: { name: "Luca Bianchi", avatar: null, country: "Italy" },
+    operator: { id: "op-anek", name: "Anek Lines" },
+    route: "Piraeus \u2192 Chania",
+    vessel: "Elyros",
+    rating: 4,
+    title: "Comfortable overnight journey to Crete",
+    content: "We took the night ferry to Chania with our car. The inside cabin was small but adequate for sleeping. The restaurant quality was surprisingly good \u2014 proper Greek food, not just fast food. The ship departed on time at midnight and arrived in the early morning. Loading the car was efficient. A very pleasant way to reach Crete without losing a day of vacation.",
+    travelDate: "2025-12-22",
+    createdAt: "2025-12-27T10:30:00Z",
+    helpful: 41,
+    verified: true,
+    categories: { comfort: 4, cleanliness: 4, punctuality: 4, value: 5, food: 4 },
+  },
+  {
+    id: "rev-007",
+    user: { name: "Kate Williams", avatar: null, country: "Australia" },
+    operator: { id: "op-goldenstar", name: "Golden Star Ferries" },
+    route: "Rafina \u2192 Paros",
+    vessel: "SuperExpress",
+    rating: 4,
+    title: "Modern and fast catamaran",
+    content: "Golden Star Ferries is a newer company but they have really nice, modern ships. The SuperExpress was very clean and had USB charging at every seat. The journey from Rafina to Paros took about 3 hours. WiFi worked well throughout. The only reason I am not giving 5 stars is that the cafe was quite limited in food options \u2014 mostly packaged snacks.",
+    travelDate: "2026-02-20",
+    createdAt: "2026-02-23T08:00:00Z",
+    helpful: 15,
+    verified: true,
+    categories: { comfort: 4, cleanliness: 5, punctuality: 4, value: 4, food: 2 },
+  },
+  {
+    id: "rev-008",
+    user: { name: "Thomas M\u00fcller", avatar: null, country: "Germany" },
+    operator: { id: "op-seajets", name: "SeaJets" },
+    route: "Santorini \u2192 Crete (Heraklion)",
+    vessel: "WorldChampion Jet",
+    rating: 3,
+    title: "Gets you there quickly, but expensive",
+    content: "SeaJets is the fastest option between Santorini and Crete at under 2 hours, which is impressive. However, the tickets are quite pricey compared to conventional ferries. The boat was delayed by 30 minutes on departure with no explanation. The seating is airline-style and reasonably comfortable. If speed is your priority and budget is not a concern, it does the job. Otherwise I would suggest a slower, cheaper option.",
+    travelDate: "2026-03-05",
+    createdAt: "2026-03-08T13:45:00Z",
+    helpful: 27,
+    verified: true,
+    categories: { comfort: 3, cleanliness: 3, punctuality: 2, value: 2, food: 3 },
+  },
+];
+
+export async function GET(request: NextRequest) {
+  try {
+    const reviews = await prisma.review.findMany({
+      include: {
+        user: true,
+        bookingLeg: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({ data: reviews });
+  } catch {
+    return NextResponse.json({ data: FALLBACK_REVIEWS, _fallback: true });
+  }
+}
