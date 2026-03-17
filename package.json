@@ -13,6 +13,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
+    "@tailwindcss/postcss": "^4.2.1",
     "@types/pg": "^8.11.11",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
